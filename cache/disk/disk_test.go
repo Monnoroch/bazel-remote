@@ -58,7 +58,7 @@ const CONTENTS_HASH = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e730433629
 func TestCacheBasics(t *testing.T) {
 	cacheDir := tempDir(t)
 	defer os.RemoveAll(cacheDir)
-	cache := New(cacheDir, 100)
+	cache := New(cacheDir, 100, false)
 
 	checkItems(t, cache.(*diskCache), 0, 0)
 
@@ -92,7 +92,7 @@ func TestCacheBasics(t *testing.T) {
 func TestCacheEviction(t *testing.T) {
 	cacheDir := tempDir(t)
 	defer os.RemoveAll(cacheDir)
-	cache := New(cacheDir, 10)
+	cache := New(cacheDir, 10, false)
 
 	expectedSizesNumItems := []struct {
 		expSize int64
@@ -139,7 +139,7 @@ func expectContentEquals(t *testing.T, data io.ReadCloser, sizeBytes int64, expe
 func TestOverwrite(t *testing.T) {
 	cacheDir := tempDir(t)
 	defer os.RemoveAll(cacheDir)
-	cache := New(cacheDir, 10)
+	cache := New(cacheDir, 10, false)
 
 	oldContent := "Hello"
 	newContent := "World"
@@ -193,7 +193,7 @@ func TestCacheExistingFiles(t *testing.T) {
 	}
 
 	const expectedSize = 3 * int64(len(CONTENTS))
-	cache := New(cacheDir, expectedSize)
+	cache := New(cacheDir, expectedSize, false)
 
 	checkItems(t, cache.(*diskCache), expectedSize, 3)
 
@@ -214,7 +214,7 @@ func TestCacheExistingFiles(t *testing.T) {
 func TestCacheBlobtooLarge(t *testing.T) {
 	cacheDir := tempDir(t)
 	defer os.RemoveAll(cacheDir)
-	diskCache := New(cacheDir, 100)
+	diskCache := New(cacheDir, 100, false)
 
 	err := diskCache.Put("a-key", 10000, "", strings.NewReader(CONTENTS))
 	if err == nil {
@@ -234,7 +234,7 @@ func TestCacheBlobtooLarge(t *testing.T) {
 func TestCacheCorruptedFile(t *testing.T) {
 	cacheDir := tempDir(t)
 	defer os.RemoveAll(cacheDir)
-	cache := New(cacheDir, 1000)
+	cache := New(cacheDir, 1000, false)
 
 	err := cache.Put(KEY, int64(len(CONTENTS)), strings.Repeat("x", 64), strings.NewReader(CONTENTS))
 	if err == nil {

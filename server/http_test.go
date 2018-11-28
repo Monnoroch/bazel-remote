@@ -27,8 +27,8 @@ func TestDownloadFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c := disk.New(cacheDir, 1024)
-	h := NewHTTPCache(c, testutils.NewSilentLogger(), testutils.NewSilentLogger())
+	c := disk.New(cacheDir, 1024, false)
+	h := NewHTTPCache(c, testutils.NewSilentLogger(), testutils.NewSilentLogger(), false)
 
 	req, err := http.NewRequest("GET", "/cas/"+hash, bytes.NewReader([]byte{}))
 	if err != nil {
@@ -78,8 +78,8 @@ func TestUploadFilesConcurrently(t *testing.T) {
 		requests[i] = r
 	}
 
-	c := disk.New(cacheDir, 1000*1024)
-	h := NewHTTPCache(c, testutils.NewSilentLogger(), testutils.NewSilentLogger())
+	c := disk.New(cacheDir, 1000*1024, false)
+	h := NewHTTPCache(c, testutils.NewSilentLogger(), testutils.NewSilentLogger(), false)
 	handler := http.HandlerFunc(h.CacheHandler)
 
 	var wg sync.WaitGroup
@@ -134,8 +134,8 @@ func TestUploadSameFileConcurrently(t *testing.T) {
 
 	data, hash := testutils.RandomDataAndHash(1024)
 
-	c := disk.New(cacheDir, 1024)
-	h := NewHTTPCache(c, testutils.NewSilentLogger(), testutils.NewSilentLogger())
+	c := disk.New(cacheDir, 1024, false)
+	h := NewHTTPCache(c, testutils.NewSilentLogger(), testutils.NewSilentLogger(), false)
 	handler := http.HandlerFunc(h.CacheHandler)
 
 	var wg sync.WaitGroup
@@ -179,8 +179,8 @@ func TestUploadCorruptedFile(t *testing.T) {
 		t.Error(err)
 	}
 
-	c := disk.New(cacheDir, 2048)
-	h := NewHTTPCache(c, testutils.NewSilentLogger(), testutils.NewSilentLogger())
+	c := disk.New(cacheDir, 2048, false)
+	h := NewHTTPCache(c, testutils.NewSilentLogger(), testutils.NewSilentLogger(), false)
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(h.CacheHandler)
 	handler.ServeHTTP(rr, r)
@@ -217,8 +217,8 @@ func TestStatusPage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c := disk.New(cacheDir, 2048)
-	h := NewHTTPCache(c, testutils.NewSilentLogger(), testutils.NewSilentLogger())
+	c := disk.New(cacheDir, 2048, false)
+	h := NewHTTPCache(c, testutils.NewSilentLogger(), testutils.NewSilentLogger(), false)
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(h.StatusPageHandler)
 	handler.ServeHTTP(rr, r)

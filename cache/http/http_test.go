@@ -31,7 +31,7 @@ func TestProxyReadWorks(t *testing.T) {
 
 	cacheDir := testutils.TempDir(t)
 	defer os.RemoveAll(cacheDir)
-	diskCache := disk.New(cacheDir, 100)
+	diskCache := disk.New(cacheDir, 100, false)
 
 	baseURL, err := url.Parse(ts.URL)
 	if err != nil {
@@ -98,7 +98,7 @@ func TestProxyWriteWorks(t *testing.T) {
 
 	cacheDir := testutils.TempDir(t)
 	defer os.RemoveAll(cacheDir)
-	diskCache := disk.New(cacheDir, 100)
+	diskCache := disk.New(cacheDir, 100, false)
 
 	baseURL, err := url.Parse(ts.URL)
 	if err != nil {
@@ -135,7 +135,7 @@ func TestProxyReadErrorsArePropagated(t *testing.T) {
 
 	cacheDir := testutils.TempDir(t)
 	defer os.RemoveAll(cacheDir)
-	diskCache := disk.New(cacheDir, 100)
+	diskCache := disk.New(cacheDir, 100, false)
 
 	baseURL, err := url.Parse(ts.URL)
 	if err != nil {
@@ -174,7 +174,7 @@ func TestProxyWriteErrorsAreNotPropagated(t *testing.T) {
 
 	cacheDir := testutils.TempDir(t)
 	defer os.RemoveAll(cacheDir)
-	diskCache := disk.New(cacheDir, 100)
+	diskCache := disk.New(cacheDir, 100, false)
 
 	baseURL, err := url.Parse(ts.URL)
 	if err != nil {

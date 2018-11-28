@@ -30,11 +30,12 @@ type Config struct {
 	TLSKeyFile         string                    `yaml:"tls_key_file"`
 	GoogleCloudStorage *GoogleCloudStorageConfig `yaml:"gcs_proxy"`
 	HTTPBackend        *HTTPBackendConfig        `yaml:"http_proxy"`
+	ReadOnly           bool                      `yaml:"read_only"`
 }
 
 // New ...
 func New(dir string, maxSize int, host string, port int, htpasswdFile string,
-	tlsCertFile string, tlsKeyFile string) (*Config, error) {
+	tlsCertFile string, tlsKeyFile string, readOnly bool) (*Config, error) {
 	c := Config{
 		Host:               host,
 		Port:               port,
@@ -45,6 +46,7 @@ func New(dir string, maxSize int, host string, port int, htpasswdFile string,
 		TLSKeyFile:         tlsKeyFile,
 		GoogleCloudStorage: nil,
 		HTTPBackend:        nil,
+		ReadOnly:           readOnly,
 	}
 
 	err := validateConfig(&c)

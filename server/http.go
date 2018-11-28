@@ -27,6 +27,7 @@ type httpCache struct {
 	cache        cache.Cache
 	accessLogger cache.Logger
 	errorLogger  cache.Logger
+	readOnly     bool
 }
 
 type statusPageData struct {
@@ -40,13 +41,14 @@ type statusPageData struct {
 // accessLogger will print one line for each HTTP request to stdout.
 // errorLogger will print unexpected server errors. Inexistent files and malformed URLs will not
 // be reported.
-func NewHTTPCache(cache cache.Cache, accessLogger cache.Logger, errorLogger cache.Logger) HTTPCache {
+func NewHTTPCache(cache cache.Cache, accessLogger cache.Logger, errorLogger cache.Logger, readOnly bool) HTTPCache {
 	errorLogger.Printf("Loaded %d existing disk cache items.", cache.NumItems())
 
 	hc := &httpCache{
 		cache:        cache,
 		accessLogger: accessLogger,
 		errorLogger:  errorLogger,
+		readOnly:     readOnly,
 	}
 	return hc
 }
@@ -121,6 +123,13 @@ func (h *httpCache) CacheHandler(w http.ResponseWriter, r *http.Request) {
 
 		logResponse(http.StatusOK)
 	case http.MethodPut:
+		if h.readOnly {
+			msg := fmt.Sprintf("PUT is disabled for a read-only instance (key = %s)", cacheKey)
+			http.Error(w, msg, http.StatusBadRequest)
+			h.errorLogger.Printf("%s", msg)
+			return
+		}
+
 		if r.ContentLength == -1 {
 			// We need the content-length header to make sure we have enough disk space.
 			msg := fmt.Sprintf("PUT without Content-Length (key = %s)", cacheKey)

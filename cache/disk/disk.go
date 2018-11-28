@@ -30,14 +30,15 @@ func (i *lruItem) Size() int64 {
 
 // diskCache is an implementation of the cache backed by files on a filesystem.
 type diskCache struct {
-	dir string
-	mux *sync.RWMutex
-	lru SizedLRU
+	dir      string
+	mux      *sync.RWMutex
+	lru      SizedLRU
+	readOnly bool
 }
 
 // New returns a new instance of a filesystem-based cache rooted at `dir`,
 // with a maximum size of `maxSizeBytes` bytes.
-func New(dir string, maxSizeBytes int64) cache.Cache {
+func New(dir string, maxSizeBytes int64, readOnly bool) cache.Cache {
 	// Create the directory structure
 	ensureDirExists(filepath.Join(dir, "cas"))
 	ensureDirExists(filepath.Join(dir, "ac"))
@@ -55,9 +56,10 @@ func New(dir string, maxSizeBytes int64) cache.Cache {
 	}
 
 	cache := &diskCache{
-		dir: filepath.Clean(dir),
-		mux: &sync.RWMutex{},
-		lru: NewSizedLRU(maxSizeBytes, onEvict),
+		dir:      filepath.Clean(dir),
+		mux:      &sync.RWMutex{},
+		lru:      NewSizedLRU(maxSizeBytes, onEvict),
+		readOnly: readOnly,
 	}
 
 	cache.loadExistingFiles()
@@ -73,6 +75,10 @@ func (c *diskCache) pathForKey(key string) string {
 // LRU index so that they can be served. Files are sorted by access time first,
 // so that the eviction behavior is preserved across server restarts.
 func (c *diskCache) loadExistingFiles() {
+	if c.readOnly {
+		return
+	}
+
 	// Walk the directory tree
 	type NameAndInfo struct {
 		info os.FileInfo
@@ -101,6 +107,13 @@ func (c *diskCache) loadExistingFiles() {
 }
 
 func (c *diskCache) Put(key string, size int64, expectedSha256 string, r io.Reader) (err error) {
+	if c.readOnly {
+		return &cache.Error{
+			Code: http.StatusBadRequest,
+			Text: "PUT is disabled for a read-only instance.",
+		}
+	}
+
 	c.mux.Lock()
 
 	// If there's an ongoing upload (i.e. cache key is present in uncommitted state),
@@ -189,13 +202,19 @@ func (c *diskCache) Put(key string, size int64, expectedSha256 string, r io.Read
 }
 
 func (c *diskCache) Get(key string, actionCache bool) (data io.ReadCloser, sizeBytes int64, err error) {
-	if !c.Contains(key, actionCache) {
-		return
+	if !c.readOnly {
+		if !c.Contains(key, actionCache) {
+			return
+		}
 	}
 
 	blobPath := c.pathForKey(key)
 
 	fileInfo, err := os.Stat(blobPath)
+	if os.IsNotExist(err) {
+		err = nil
+		return
+	}
 	if err != nil {
 		return
 	}

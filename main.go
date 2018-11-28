@@ -81,6 +81,11 @@ func main() {
 			Usage:  "Path to a pem encoded key file.",
 			EnvVar: "BAZEL_REMOTE_TLS_KEY_FILE",
 		},
+		cli.BoolFlag{
+			Name:   "read_only",
+			Usage:  "Whether to start the cache in read-only mode. In read only mode it will return errors for PUT requests but also not store an in-memory cache of cached items that exist on disk",
+			EnvVar: "BAZEL_REMOTE_READ_ONLY",
+		},
 	}
 
 	app.Action = func(ctx *cli.Context) error {
@@ -96,7 +101,8 @@ func main() {
 				ctx.Int("port"),
 				ctx.String("htpasswd_file"),
 				ctx.String("tls_cert_file"),
-				ctx.String("tls_key_file"))
+				ctx.String("tls_key_file"),
+				ctx.Bool("read_only"))
 		}
 
 		if err != nil {
@@ -108,7 +114,7 @@ func main() {
 		accessLogger := log.New(os.Stdout, "", log.Ldate|log.Ltime|log.LUTC)
 		errorLogger := log.New(os.Stderr, "", log.Ldate|log.Ltime|log.LUTC)
 
-		diskCache := disk.New(c.Dir, int64(c.MaxSize)*1024*1024*1024)
+		diskCache := disk.New(c.Dir, int64(c.MaxSize)*1024*1024*1024, c.ReadOnly)
 
 		var proxyCache cache.Cache
 		if c.GoogleCloudStorage != nil {
@@ -130,7 +136,7 @@ func main() {
 			proxyCache = diskCache
 		}
 
-		h := server.NewHTTPCache(proxyCache, accessLogger, errorLogger)
+		h := server.NewHTTPCache(proxyCache, accessLogger, errorLogger, c.ReadOnly)
 
 		http.HandleFunc("/status", h.StatusPageHandler)
 		http.HandleFunc("/", maybeAuth(h.CacheHandler, c.HtpasswdFile, c.Host))
